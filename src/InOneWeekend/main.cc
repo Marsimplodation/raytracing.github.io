@@ -16,16 +16,38 @@
 #include "hittable_list.h"
 #include "material.h"
 #include "sphere.h"
+#include <chrono>
 
 
+struct Timer {
+    Timer(const char* name);
+    ~Timer();
+    const char *name;
+    float duration;
+    std::chrono::time_point<std::chrono::high_resolution_clock> start;
+};
+
+
+Timer::Timer(const char* name) : name(name), start(std::chrono::high_resolution_clock::now()) {
+    std::clog << "\rTimer " << name << " started\n";
+}
+
+Timer::~Timer() {
+    auto end = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration<float>(end - start).count();
+
+    std::clog << "\rTimer " << name << " finished, took: " << duration << "s\n";
+}
 int main() {
+    Timer t("raytracer - original");
     hittable_list world;
 
+    int count = 20;
     auto ground_material = make_shared<lambertian>(color(0.5, 0.5, 0.5));
     world.add(make_shared<sphere>(point3(0,-1000,0), 1000, ground_material));
 
-    for (int a = -11; a < 11; a++) {
-        for (int b = -11; b < 11; b++) {
+    for (int a = -count; a < count; a++) {
+        for (int b = -count; b < count; b++) {
             auto choose_mat = random_double();
             point3 center(a + 0.9*random_double(), 0.2, b + 0.9*random_double());
 
@@ -65,7 +87,7 @@ int main() {
 
     cam.aspect_ratio      = 16.0 / 9.0;
     cam.image_width       = 1200;
-    cam.samples_per_pixel = 10;
+    cam.samples_per_pixel = 50;
     cam.max_depth         = 20;
 
     cam.vfov     = 20;

@@ -9,11 +9,28 @@ cmake_minimum_required ( VERSION 3.1.0...4.0.0 )
 project ( RTWeekend LANGUAGES CXX )
 
 # Set to C++11
-set ( CMAKE_CXX_STANDARD          11 )
+include(FetchContent)
+set(CMAKE_CXX_STANDARD 23)
 set ( CMAKE_CXX_STANDARD_REQUIRED ON )
 set ( CMAKE_CXX_EXTENSIONS        OFF )
+set (CMAKE_CXX_FLAGS_RELEASE  "-O3 -msse4.2 -mavx -mavx2 -mfma -march=native -g -DNDEBUG")
 
 # Source
+
+option(TRACY_ENABLE "" ON)
+option(TRACY_ON_DEMAND "" ON)
+FetchContent_Declare(
+  tracy
+  GIT_REPOSITORY https://github.com/wolfpld/tracy
+  GIT_TAG v0.12.2 
+)
+
+FetchContent_Declare(
+  GLM
+  GIT_REPOSITORY git@github.com:Marsimplodation/glm.git
+  GIT_BRANCH master
+)
+FetchContent_MakeAvailable(tracy GLM)
 
 set ( EXTERNAL
   src/external/stb_image.h
@@ -31,6 +48,15 @@ set ( SOURCE_ONE_WEEKEND
   src/InOneWeekend/rtweekend.h
   src/InOneWeekend/sphere.h
   src/InOneWeekend/vec3.h
+)
+
+set ( SOURCE_ONE_WEEKEND_OPT
+  src/InOneWeekendOptimized/main.cc
+  src/InOneWeekendOptimized/camera.h
+  src/InOneWeekendOptimized/scene.h
+  src/InOneWeekendOptimized/material.h
+  src/InOneWeekendOptimized/ray.h
+  src/InOneWeekendOptimized/rtweekend.h
 )
 
 set ( SOURCE_NEXT_WEEK
@@ -107,6 +133,17 @@ endif()
 
 # Executables
 add_executable(inOneWeekend      ${EXTERNAL} ${SOURCE_ONE_WEEKEND})
+target_link_libraries(inOneWeekend TracyClient) 
+target_compile_definitions(inOneWeekend  PRIVATE TRACY_ENABLE)
+
+
+find_package(TBB REQUIRED)
+add_executable(inOneWeekendOpt      ${EXTERNAL} ${SOURCE_ONE_WEEKEND_OPT})
+target_link_libraries(inOneWeekendOpt TracyClient) 
+target_link_libraries(inOneWeekendOpt TBB::tbb) 
+target_link_libraries(inOneWeekendOpt glm::glm) 
+target_compile_definitions(inOneWeekendOpt  PRIVATE TRACY_ENABLE)
+
 add_executable(theNextWeek       ${EXTERNAL} ${SOURCE_NEXT_WEEK})
 add_executable(theRestOfYourLife ${EXTERNAL} ${SOURCE_REST_OF_YOUR_LIFE})
 add_executable(cos_cubed         src/TheRestOfYourLife/cos_cubed.cc         )
